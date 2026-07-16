@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ストーリーズ用リンクタグ付けツール</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --card: #fdf6f8;
+    --ink: #78483b;
+    --ink-soft: #a8857b;
+    --line: #f2e3df;
+    --accent: #f6d6e3;
+    --accent-ink: #a8477a;
+    --accent-line: #ecb9cf;
+    --code-bg: #f0dde1;
+    --up: #7fa886;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #221715; --card: #2c1e1c; --ink: #f1e2dc; --ink-soft: #c2a89e;
+      --line: #3d2b28; --accent: #5a2f42; --accent-ink: #f6b8d4; --accent-line: #7a3f56;
+      --code-bg: #3a2523; --up: #8fc49a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #221715; --card: #2c1e1c; --ink: #f1e2dc; --ink-soft: #c2a89e;
+    --line: #3d2b28; --accent: #5a2f42; --accent-ink: #f6b8d4; --accent-line: #7a3f56;
+    --code-bg: #3a2523; --up: #8fc49a;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --card: #fdf6f8; --ink: #78483b; --ink-soft: #a8857b;
+    --line: #f2e3df; --accent: #f6d6e3; --accent-ink: #a8477a; --accent-line: #ecb9cf;
+    --code-bg: #f0dde1; --up: #7fa886;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.7;
+  }
+  main { max-width: 480px; margin: 0 auto; padding: 32px 20px 64px; }
+  .eyebrow {
+    font-size: 11px; letter-spacing: .12em; color: var(--ink-soft);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  h1 {
+    font-family: "Didot", "Bodoni 72", Georgia, serif;
+    font-size: 23px; font-weight: 400; margin: 0 0 10px; text-wrap: balance;
+  }
+  p.lead { color: var(--ink-soft); font-size: 14px; margin: 0 0 28px; }
+
+  .field-label { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 8px; font-weight: 700; }
+  textarea {
+    width: 100%; min-height: 84px; resize: vertical;
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 14px;
+    font-size: 15px; color: var(--ink); background: var(--bg);
+    font-family: inherit; line-height: 1.5;
+  }
+  textarea:focus { outline: none; border-color: var(--accent-line); }
+  textarea::placeholder { color: var(--ink-soft); opacity: .7; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  button {
+    font-family: inherit; font-size: 14.5px; font-weight: 700;
+    border-radius: 10px; padding: 13px 18px; cursor: pointer; border: 1.5px solid transparent;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-ghost {
+    flex: 1; background: transparent; border-color: var(--line); color: var(--ink-soft);
+  }
+  .btn-primary {
+    flex: 2; background: var(--accent); border-color: var(--accent-line); color: var(--accent-ink);
+  }
+  .btn-primary:disabled { opacity: .45; cursor: default; }
+  .btn-primary.copied { background: var(--up); border-color: var(--up); color: #fff; }
+
+  .result {
+    margin-top: 22px; padding: 16px 16px 18px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; min-height: 20px;
+  }
+  .result .field-label { margin-bottom: 6px; }
+  .result-url {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
+    word-break: break-all; color: var(--ink);
+  }
+  .result-url .param { color: var(--accent-ink); font-weight: 600; }
+  .result.empty .result-url { color: var(--ink-soft); font-family: inherit; font-size: 13.5px; }
+
+  ol.steps { list-style: none; margin: 32px 0 0; padding: 0; counter-reset: step; }
+  ol.steps li {
+    counter-increment: step; position: relative; padding: 1px 0 18px 36px; font-size: 13.5px;
+  }
+  ol.steps li::before {
+    content: counter(step); position: absolute; left: 0; top: -1px;
+    width: 24px; height: 24px; border-radius: 50%; background: var(--card);
+    border: 1px solid var(--line); color: var(--ink-soft);
+    font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  ol.steps li b { color: var(--ink); }
+
+  .note { font-size: 12px; color: var(--ink-soft); margin-top: 28px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(12px);
+    background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 600;
+    padding: 10px 18px; border-radius: 999px; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">ALLISON BROWN &middot; IG ダッシュボード連携</div>
+  <h1>ストーリーズ用リンクタグ付けツール</h1>
+  <p class="lead">商品ページのURLを貼り付けると、売上を後で追えるようにする目印を付けてコピーできるよ。</p>
+
+  <div class="field-label">① 商品ページのURLを貼り付け</div>
+  <textarea id="input" placeholder="https://allisonbrown.jp/products/..." autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+  <div class="btn-row">
+    <button class="btn-ghost" id="pasteBtn">📋 クリップボードから貼り付け</button>
+  </div>
+
+  <div class="result empty" id="result">
+    <div class="field-label">② タグ付きリンク</div>
+    <div class="result-url" id="resultUrl">ここに結果が出るよ</div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-primary" id="copyBtn" disabled>コピーする</button>
+  </div>
+
+  <ol class="steps">
+    <li>Instagramで投稿する商品ページのリンクを<b>いつも通りコピー</b></li>
+    <li>このページに戻って「📋クリップボードから貼り付け」を押す(手貼りでもOK)</li>
+    <li>「コピーする」を押して、そのままInstagramのリンクスタンプに貼り付け</li>
+  </ol>
+
+  <p class="note">※ フィード投稿やハイライトのリンクにはこのツールは使わなくてOK。ストーリーズの時だけ使ってね。</p>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const input = document.getElementById('input');
+const resultBox = document.getElementById('result');
+const resultUrl = document.getElementById('resultUrl');
+const copyBtn = document.getElementById('copyBtn');
+const pasteBtn = document.getElementById('pasteBtn');
+const toast = document.getElementById('toast');
+
+let tagged = null;
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function tagUrl(raw) {
+  let u;
+  try { u = new URL(raw.trim()); } catch (e) { return null; }
+  u.searchParams.set('utm_source', 'instagram');
+  u.searchParams.set('utm_medium', 'story');
+  if (!u.searchParams.get('utm_campaign')) {
+    const seg = u.pathname.split('/').filter(Boolean);
+    u.searchParams.set('utm_campaign', seg[seg.length - 1] || 'story');
+  }
+  return u.toString();
+}
+
+function render() {
+  const raw = input.value;
+  if (!raw.trim()) {
+    tagged = null;
+    resultBox.classList.add('empty');
+    resultUrl.innerHTML = 'ここに結果が出るよ';
+    copyBtn.disabled = true;
+    copyBtn.classList.remove('copied');
+    copyBtn.textContent = 'コピーする';
+    return;
+  }
+  tagged = tagUrl(raw);
+  if (!tagged) {
+    resultBox.classList.add('empty');
+    resultUrl.innerHTML = 'URLの形が読み取れなかったよ🥲 リンクだけを貼り付けてみてね';
+    copyBtn.disabled = true;
+    return;
+  }
+  resultBox.classList.remove('empty');
+  resultUrl.innerHTML = tagged.replace(
+    /(\?.*)$/,
+    m => `<span class="param">${m}</span>`);
+  copyBtn.disabled = false;
+}
+
+input.addEventListener('input', render);
+
+pasteBtn.addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) { input.value = text; render(); showToast('貼り付けたよ📋'); }
+    else { showToast('クリップボードが空みたい'); }
+  } catch (e) {
+    showToast('自動貼り付けできなかった、手で貼ってね');
+    input.focus();
+  }
+});
+
+copyBtn.addEventListener('click', async () => {
+  if (!tagged) return;
+  try {
+    await navigator.clipboard.writeText(tagged);
+  } catch (e) {
+    // クリップボードAPIが使えない環境向けフォールバック
+    const ta = document.createElement('textarea');
+    ta.value = tagged; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch (e2) {}
+    document.body.removeChild(ta);
+  }
+  copyBtn.classList.add('copied');
+  copyBtn.textContent = 'コピーしたよ ✓';
+  showToast('コピーしたよ、Instagramに貼り付けてね');
+  setTimeout(() => {
+    copyBtn.classList.remove('copied');
+    copyBtn.textContent = 'コピーする';
+  }, 2200);
+});
+</script>
+</body>
+</html>
